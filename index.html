@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	    <meta charset="UTF-8">
+	    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	    <title>Price Scanner with OCR</title>
+	    <!-- Add Tesseract.js for OCR -->
+	    <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.1.1/tesseract.min.js"></script>
+	    <style>
+	        /* ... Previous styles remain exactly the same ... */
+	        body {
+	            font-family: system-ui, -apple-system, sans-serif;
+	            max-width: 800px;
+	            margin: 0 auto;
+	            padding: 20px;
+	            background: #f7f7f7;
+	        }
+	        
+	        .container {
+	            background: white;
+	            padding: 20px;
+	            border-radius: 8px;
+	            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+	        }
+	
+	        #videoContainer {
+	            width: 100%;
+	            max-width: 640px;
+	            margin: 20px auto;
+	            position: relative;
+	        }
+	
+	        #video {
+	            width: 100%;
+	            border-radius: 8px;
+	        }
+	
+	        #canvas {
+	            position: absolute;
+	            top: 0;
+	            left: 0;
+	            width: 100%;
+	            height: 100%;
+	            pointer-events: none;
+	        }
+	
+	        #overlay {
+	            position: absolute;
+	            top: 0;
+	            left: 0;
+	            width: 100%;
+	            height: 100%;
+	            pointer-events: none;
+	        }
+	
+	        #priceList {
+	            margin: 20px 0;
+	            padding: 0;
+	            list-style: none;
+	        }
+	
+	        #priceList li {
+	            padding: 10px;
+	            margin: 5px 0;
+	            background: #f0f0f0;
+	            border-radius: 4px;
+	            display: flex;
+	            justify-content: space-between;
+	        }
+	
+	        .total {
+	            font-size: 1.2em;
+	            font-weight: bold;
+	            margin-top: 20px;
+	            padding: 10px;
+	            background: #e0e0e0;
+	            border-radius: 4px;
+	        }
+	
+	        button {
+	            background: #007bff;
+	            color: white;
+	            border: none;
+	            padding: 10px 20px;
+	            border-radius: 4px;
+	            cursor: pointer;
+	            margin: 5px;
+	        }
+	
+	        button:hover {
+	            background: #0056b3;
+	        }
+	
+	        .delete-btn {
+	            background: #dc3545;
+	            color: white;
+	            border: none;
+	            padding: 5px 10px;
+	            border-radius: 4px;
+	            cursor: pointer;
+	        }
+	
+	        .delete-btn:hover {
+	            background: #c82333;
+	        }
+	
+	        #manualPrice {
+	            padding: 8px;
+	            border: 1px solid #ddd;
+	            border-radius: 4px;
+	            margin-right: 10px;
+	        }
+	
+	        #status {
+	            margin: 10px 0;
+	            padding: 10px;
+	            border-radius: 4px;
+	            background: #e8f4ff;
+	        }
+	
+	        .scanning-area {
+	            position: absolute;
+	            top: 50%;
+	            left: 50%;
+	            transform: translate(-50%, -50%);
+	            width: 200px;
+	            height: 60px;
+	            border: 2px solid #007bff;
+	            border-radius: 4px;
+	        }
+	
+	        .processing {
+	            opacity: 0.7;
+	            pointer-events: none;
+	        }
+	    </style>
+	</head>
+	<body>
+	    <div class="container">
+	        <h1>Price Scanner with OCR</h1>
+	        <button id="startCamera">Start Camera</button>
+	        <div id="status">Ready to scan</div>
+	        
+	        <div id="videoContainer" style="display: none;">
+	            <video id="video" autoplay playsinline></video>
+	            <canvas id="canvas"></canvas>
+	            <div id="overlay">
+	                <div class="scanning-area"></div>
+	            </div>
+	        </div>
+	        
+	        <div>
+	            <input type="number" id="manualPrice" step="0.01" placeholder="Enter price manually">
+	            <button onclick="addManualPrice()">Add Price</button>
+	        </div>
+	
+	        <ul id="priceList"></ul>
+	        <div class="total">Total: $<span id="total">0.00</span></div>
+	        <button onclick="clearPrices()">Clear All</button>
+	    </div>
+	
+	    <script>
+	        let prices = [];
+	        let isProcessing = false;
+	        let worker = null;
+	        const video = document.getElementById('video');
+	        const canvas = document.getElementById('canvas');
+	        const ctx = canvas.getContext('2d');
+	        const startButton = document.getElementById('startCamera');
+	        const videoContainer = document.getElementById('videoContainer');
+	        const statusElement = document.getElementById('status');
+	
+	        // Initialize Tesseract in an async function
+	        async function initializeTesseract() {
+	            try {
+	                worker = await Tesseract.createWorker({
+	                    logger: m => {
+	                        if (m.status === 'recognizing text') {
+	                            statusElement.textContent = 'Scanning for prices...';
+	                        }
+	                    }
+	                });
+	                await worker.loadLanguage('eng');
+	                await worker.initialize('eng');
+	                // Configure Tesseract to look for digits and common price characters
+	                await worker.setParameters({
+	                    tessedit_char_whitelist: '0123456789.$',
+	                });
+	                statusElement.textContent = 'OCR initialized. Ready to scan.';
+	            } catch (error) {
+	                console.error('Error initializing Tesseract:', error);
+	                statusElement.textContent = 'Error initializing OCR. Please refresh the page.';
+	            }
+	        }
+	
+	        // Call the initialization function when the page loads
+	        initializeTesseract();
+	
+	        startButton.addEventListener('click', async () => {
+	            try {
+	                const stream = await navigator.mediaDevices.getUserMedia({ 
+	                    video: { 
+	                        facingMode: 'environment',
+	                        width: { ideal: 1280 },
+	                        height: { ideal: 720 }
+	                    }
+	                });
+	                video.srcObject = stream;
+	                videoContainer.style.display = 'block';
+	                startButton.style.display = 'none';
+	                
+	                // Set canvas size after video loads
+	                video.addEventListener('loadedmetadata', () => {
+	                    canvas.width = video.videoWidth;
+	                    canvas.height = video.videoHeight;
+	                    // Start scanning loop
+	                    scanFrame();
+	                });
+	            } catch (err) {
+	                console.error('Error accessing camera:', err);
+	                alert('Error accessing camera. Please make sure you have granted camera permissions.');
+	            }
+	        });
+	
+	        async function scanFrame() {
+	            if (!isProcessing && video.srcObject && worker) {
+	                isProcessing = true;
+	                
+	                // Draw video frame to canvas
+	                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+	                
+	                // Get the scanning area coordinates
+	                const scanArea = getScanningArea();
+	                
+	                // Get image data from the scanning area
+	                const imageData = ctx.getImageData(
+	                    scanArea.x, 
+	                    scanArea.y, 
+	                    scanArea.width, 
+	                    scanArea.height
+	                );
+	                
+	                // Create a temporary canvas for the cropped area
+	                const tempCanvas = document.createElement('canvas');
+	                tempCanvas.width = scanArea.width;
+	                tempCanvas.height = scanArea.height;
+	                const tempCtx = tempCanvas.getContext('2d');
+	                tempCtx.putImageData(imageData, 0, 0);
+	
+	                try {
+	                    // Perform OCR on the cropped area
+	                    const result = await worker.recognize(tempCanvas);
+	                    const text = result.data.text.trim();
+	                    
+	                    // Try to extract price from the text
+	                    const price = extractPrice(text);
+	                    if (price !== null) {
+	                        addPrice(price);
+	                        // Add a small delay after successful scan
+	                        await new Promise(resolve => setTimeout(resolve, 1000));
+	                    }
+	                } catch (error) {
+	                    console.error('OCR Error:', error);
+	                }
+	                
+	                isProcessing = false;
+	            }
+	            
+	            // Continue scanning
+	            requestAnimationFrame(scanFrame);
+	        }
+	
+	        function getScanningArea() {
+	            // Calculate scanning area in the center of the video
+	            const scanWidth = canvas.width * 0.3;  // 30% of video width
+	            const scanHeight = canvas.height * 0.15; // 15% of video height
+	            return {
+	                x: (canvas.width - scanWidth) / 2,
+	                y: (canvas.height - scanHeight) / 2,
+	                width: scanWidth,
+	                height: scanHeight
+	            };
+	        }
+	
+	        function extractPrice(text) {
+	            // Remove spaces and convert to lowercase
+	            text = text.replace(/\s+/g, '').toLowerCase();
+	            
+	            // Look for price patterns ($XX.XX or XX.XX)
+	            const priceRegex = /\$?\d+\.\d{2}/;
+	            const match = text.match(priceRegex);
+	            
+	            if (match) {
+	                // Remove $ and convert to float
+	                const price = parseFloat(match[0].replace('$', ''));
+	                if (!isNaN(price) && price > 0 && price < 1000) { // Basic validation
+	                    return price;
+	                }
+	            }
+	            return null;
+	        }
+	
+	        function addPrice(price) {
+	            // Check if this price was recently added (prevent duplicates)
+	            const lastPrice = prices[prices.length - 1];
+	            if (lastPrice === price) {
+	                return;
+	            }
+	            
+	            prices.push(price);
+	            statusElement.textContent = `Added: $${price.toFixed(2)}`;
+	            updateDisplay();
+	        }
+	
+	        function addManualPrice() {
+	            const input = document.getElementById('manualPrice');
+	            const price = parseFloat(input.value);
+	            if (!isNaN(price) && price > 0) {
+	                addPrice(price);
+	                input.value = '';
+	            } else {
+	                alert('Please enter a valid price');
+	            }
+	        }
+	
+	        function deletePrice(index) {
+	            prices.splice(index, 1);
+	            updateDisplay();
+	        }
+	
+	        function updateDisplay() {
+	            const priceList = document.getElementById('priceList');
+	            const totalElement = document.getElementById('total');
+	            
+	            priceList.innerHTML = '';
+	            prices.forEach((price, index) => {
+	                const li = document.createElement('li');
+	                li.innerHTML = `
+	                    $${price.toFixed(2)}
+	                    <button class="delete-btn" onclick="deletePrice(${index})">×</button>
+	                `;
+	                priceList.appendChild(li);
+	            });
+	
+	            const total = prices.reduce((sum, price) => sum + price, 0);
+	            totalElement.textContent = total.toFixed(2);
+	        }
+	
+	        function clearPrices() {
+	            prices = [];
+	            updateDisplay();
+	            statusElement.textContent = 'Ready to scan';
+	        }
+	    </script>
+	</body>
+</html>
