@@ -215,6 +215,20 @@
 			const scannedPriceElement = document.getElementById('scannedPrice');
 			const overlayElement = document.getElementById('overlay');
 	
+			function loadPrices() {
+				const savedPrices = localStorage.getItem('scannerPrices');
+				if (savedPrices) {
+					prices = JSON.parse(savedPrices);
+					updateDisplay();
+				}
+			}
+			
+			function savePrices() {
+				localStorage.setItem('scannerPrices', JSON.stringify(prices));
+			}
+
+			loadPrices();
+
 			async function initializeTesseract() {
 				try {
 					worker = await Tesseract.createWorker({
@@ -384,6 +398,7 @@
 				}
 				
 				prices.push(price);
+				savePrices();
 				statusElement.textContent = `Added: €${price.toFixed(2)}`;
 				updateDisplay();
 			}
@@ -402,6 +417,7 @@
 	
 			function deletePrice(index) {
 				prices.splice(index, 1);
+				savePrices();
 				updateDisplay();
 			}
 	
@@ -422,9 +438,20 @@
 				const total = prices.reduce((sum, price) => sum + price, 0);
 				totalElement.textContent = total.toFixed(2);
 			}
+
+			function promptClearPrices() {
+				clearConfirmDialog.style.display = 'block';
+				overlayElement.classList.add('dimmed');
+			}
+
+			function hideClearConfirmDialog() {
+				clearConfirmDialog.style.display = 'none';
+				overlayElement.classList.remove('dimmed');
+			}
 	
 			function clearPrices() {
 				prices = [];
+				localStorage.removeItem('scannerPrices');
 				updateDisplay();
 				statusElement.textContent = 'Ready to scan';
 			}
