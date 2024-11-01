@@ -3,7 +3,7 @@
 	<head>
 	    <meta charset="UTF-8">
 	    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-	    <title>Price Scanner with OCR</title>
+	    <title>Scan & Plan</title>
 	    <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.1.1/tesseract.min.js"></script>
 	    <style>
 			body {
@@ -166,9 +166,9 @@
 	</head>
 	<body>
 	    <div class="container">
-			<h1>Price Scanner with OCR</h1>
-			<button id="startCamera">Start Camera</button>
-			<div id="status">Ready to scan</div>
+			<h1>Scan & Plan</h1>
+			<button id="startCamera">Scan Price</button>
+			<div id="status">Ready to Scan!</div>
 		
 			<div id="videoContainer" style="display: none;">
 				<video id="video" autoplay playsinline></video>
@@ -180,19 +180,19 @@
 		
 			<div>
 				<input type="number" id="manualPrice" step="0.01" placeholder="Enter price manually">
-				<button onclick="addManualPrice()">Add Price</button>
+				<button onclick="addManualPrice()">Add Manually</button>
 			</div>
 	
 			<ul id="priceList"></ul>
-			<div class="total">Total: €<span id="total">0.00</span></div>
-			<button onclick="clearPrices()">Clear All</button>
+			<div class="total">Total: <span id="total">0.00</span>€</div>
+			<button onclick="clearPrices()">Clear Prices</button>
 	    </div>
 	
 	    <div id="confirmationDialog">
 			<h3>Confirm Price</h3>
-			<p>Scanned price: €<span id="scannedPrice">0.00</span></p>
+			<p>Scanned price: <span id="scannedPrice">0.00</span>€</p>
 			<div class="confirmation-buttons">
-				<button class="confirm-btn" onclick="confirmPrice()">Accept</button>
+				<button class="confirm-btn" onclick="confirmPrice()">Confirm</button>
 				<button class="reject-btn" onclick="rejectPrice()">Try Again</button>
 			</div>
 	    </div>
@@ -244,11 +244,10 @@
 					await worker.setParameters({
 						tessedit_char_whitelist: '0123456789.,€',
 					});
-					statusElement.textContent = 'OCR initialized. Ready to scan.';
+					statusElement.textContent = 'Ready to Scan!';
 				}
 				catch (error) {
-					console.error('Error initializing Tesseract:', error);
-					statusElement.textContent = 'Error initializing OCR. Please refresh the page.';
+					statusElement.textContent = 'Error while initializing OCR, please refresh the app!';
 				}
 			}
 	
@@ -276,8 +275,7 @@
 					});
 				}
 				catch (err) {
-					console.error('Error accessing camera:', err);
-					alert('Error accessing camera. Please make sure you have granted camera permissions.');
+					alert('Error while accessing camera, please make sure you have granted camera permissions!');
 				}
 			});
 	
@@ -393,7 +391,7 @@
 								
 				prices.push(price);
 				savePrices();
-				statusElement.textContent = `Added: €${price.toFixed(2)}`;
+				statusElement.textContent = `Added: ${price.toFixed(2)}€`;
 				updateDisplay();
 			}
 	
@@ -405,7 +403,7 @@
 					input.value = '';
 				}
 				else {
-					alert('Please enter a valid price');
+					alert('Please enter a valid price!');
 				}
 			}
 	
@@ -423,7 +421,7 @@
 				prices.forEach((price, index) => {
 					const li = document.createElement('li');
 					li.innerHTML = `
-						€${price.toFixed(2)}
+						${price.toFixed(2)}€
 						<button class="delete-btn" onclick="deletePrice(${index})">×</button>
 					`;
 					priceList.appendChild(li);
@@ -447,7 +445,7 @@
 				prices = [];
 				localStorage.removeItem('scannerPrices');
 				updateDisplay();
-				statusElement.textContent = 'Ready to scan';
+				statusElement.textContent = 'Ready to Scan';
 			}
 	    </script>
 	</body>
