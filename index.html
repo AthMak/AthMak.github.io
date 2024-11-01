@@ -163,6 +163,64 @@
 			.reject-btn {
 				background: #dc3545;
 			}
+
+			.modal-dialog {
+				background: white;
+				border-radius: 8px;
+				box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+				display: none;
+				left: 50%;
+				max-height: 80vh;
+				max-width: 80%;
+				padding: 20px;
+				overflow-y: auto;
+				position: fixed;
+				top: 50%;
+				transform: translate(-50%, -50%);
+				width: 400px;
+				z-index: 1000;
+			}
+
+			#archiveName {
+				border: 1px solid #ddd;
+				border-radius: 4px;
+				margin: 10px 0;
+				padding: 8px;
+				width: 100%;
+			}
+
+			.archived-list {
+				background: #f0f0f0;
+				border-radius: 4px;
+				margin: 10px 0;
+				padding: 10px;
+				position: relative;
+			}
+
+			.archived-list h4 {
+				margin: 0 0 10px 0;
+			}
+
+			.archived-list-details {
+				color: #666;
+				font-size: 0.9em;
+			}
+
+			.archive-delete-btn {
+				background: #dc3545;
+				border: none;
+				border-radius: 4px;
+				color: white;
+				cursor: pointer;
+				padding: 5px 8px;
+				position: absolute;
+				right: 10px;
+				top: 10px;
+			}
+
+			.archive-delete-btn:hover {
+				background: #c82333;
+			}
 	    </style>
 	</head>
 	<body>
@@ -187,6 +245,8 @@
 			<ul id="priceList"></ul>
 			<div class="total">Total: <span id="total">0.00</span>€</div>
 			<button onclick="clearPrices()">Clear Prices</button>
+			<button onclick="showArchiveDialog()">Archive List</button>
+			<button onclick="showArchiveListDialog()">View Archives</button>
 	    </div>
 	
 	    <div id="confirmationDialog">
@@ -197,6 +257,23 @@
 				<button class="reject-btn" onclick="rejectPrice()">Try Again</button>
 			</div>
 	    </div>
+	
+	    <div id="archiveDialog" class="modal-dialog">
+			<h3>Archive Current List</h3>
+			<input type="text" id="archiveName" placeholder="List name (optional)">
+			<div class="confirmation-buttons">
+				<button class="confirm-btn" onclick="confirmArchive()">Archive</button>
+				<button class="reject-btn" onclick="hideArchiveDialog()">Cancel</button>
+			</div>
+		</div>
+
+		<div id="archiveListDialog" class="modal-dialog">
+			<h3>Archived Lists</h3>
+			<div id="archivedLists"></div>
+			<div class="confirmation-buttons">
+				<button class="reject-btn" onclick="hideArchiveListDialog()">Close</button>
+			</div>
+		</div>
 	
 	    <script>
 			let prices = [];
@@ -447,6 +524,82 @@
 				localStorage.removeItem('scannerPrices');
 				updateDisplay();
 				statusElement.textContent = 'Ready to Scan';
+			}
+
+			function showArchiveDialog() {
+				const archiveDialog = document.getElementById('archiveDialog');
+				archiveDialog.style.display = 'block';
+				overlayElement.classList.add('dimmed');
+				
+				// Set default name as current date
+				const today = new Date();
+				const defaultName = today.toLocaleDateString('en-GB'); // DD/MM/YYYY format
+				document.getElementById('archiveName').value = defaultName;
+			}
+
+			function hideArchiveDialog() {
+				document.getElementById('archiveDialog').style.display = 'none';
+				overlayElement.classList.remove('dimmed');
+			}
+
+			function confirmArchive() {
+				const name = document.getElementById('archiveName').value.trim() || new Date().toLocaleDateString('en-GB');
+				const archive = {
+					name: name,
+					date: new Date().toISOString(),
+					prices: [...prices],
+					total: prices.reduce((sum, price) => sum + price, 0)
+				};
+
+				// Get existing archives
+				const archives = JSON.parse(localStorage.getItem('priceArchives') || '[]');
+				archives.push(archive);
+				localStorage.setItem('priceArchives', JSON.stringify(archives));
+
+				// Clear current prices
+				clearPrices();
+				hideArchiveDialog();
+			}
+
+			function showArchiveListDialog() {
+				const archives = JSON.parse(localStorage.getItem('priceArchives') || '[]');
+				const archiveListDialog = document.getElementById('archiveListDialog');
+				const archiveListsContainer = document.getElementById('archivedLists');
+				
+				archiveListsContainer.innerHTML = '';
+				
+				archives.reverse().forEach((archive, index) => {
+					const archiveDate = new Date(archive.date);
+					const formattedDate = archiveDate.toLocaleString();
+					
+					const archiveElement = document.createElement('div');
+					archiveElement.className = 'archived-list';
+					archiveElement.innerHTML = `
+						<h4>${archive.name}</h4>
+						<div class="archived-list-details">
+							<div>Date: ${formattedDate}</div>
+							<div>Items: ${archive.prices.length}</div>
+							<div>Total: ${archive.total.toFixed(2)}€</div>
+						</div>
+						<button class="archive-delete-btn" onclick="deleteArchive(${index})">Delete</button>
+					`;
+					archiveListsContainer.appendChild(archiveElement);
+				});
+				
+				archiveListDialog.style.display = 'block';
+				overlayElement.classList.add('dimmed');
+			}
+
+			function hideArchiveListDialog() {
+				document.getElementById('archiveListDialog').style.display = 'none';
+				overlayElement.classList.remove('dimmed');
+			}
+
+			function deleteArchive(index) {
+				const archives = JSON.parse(localStorage.getItem('priceArchives') || '[]');
+				archives.splice(index, 1);
+				localStorage.setItem('priceArchives', JSON.stringify(archives));
+				showArchiveListDialog();
 			}
 	    </script>
 	</body>
