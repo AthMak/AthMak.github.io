@@ -6,424 +6,428 @@
 	    <title>Price Scanner with OCR</title>
 	    <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.1.1/tesseract.min.js"></script>
 	    <style>
-			/* Previous styles remain the same */
 			body {
-			    font-family: system-ui, -apple-system, sans-serif;
-			    max-width: 800px;
-			    margin: 0 auto;
-			    padding: 20px;
-			    background: #f7f7f7;
+				background: #f7f7f7;
+				font-family: system-ui, -apple-system, sans-serif;
+				max-width: 800px;
+				margin: 0 auto;
+				padding: 20px;
 			}
 			
 			.container {
-			    background: white;
-			    padding: 20px;
-			    border-radius: 8px;
-			    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+				background: white;
+				border-radius: 8px;
+				box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+				padding: 20px;
 			}
 		
 			#videoContainer {
-			    width: 100%;
-			    max-width: 640px;
-			    margin: 20px auto;
-			    position: relative;
+				margin: 20px auto;
+				max-width: 640px;
+				position: relative;
+				width: 100%;
 			}
 		
 			#video {
-			    width: 100%;
-			    border-radius: 8px;
+				border-radius: 8px;
+				width: 100%;
 			}
 		
 			#canvas {
-			    position: absolute;
-			    top: 0;
-			    left: 0;
-			    width: 100%;
-			    height: 100%;
-			    pointer-events: none;
+				height: 100%;
+				left: 0;
+				pointer-events: none;
+				position: absolute;
+				top: 0;
+				width: 100%;
 			}
 		
 			#overlay {
-			    position: absolute;
-			    top: 0;
-			    left: 0;
-			    width: 100%;
-			    height: 100%;
-			    pointer-events: none;
+				height: 100%;
+				left: 0;
+				pointer-events: none;
+				position: absolute;
+				top: 0;
+				width: 100%;
 			}
 		
 			#priceList {
-			    margin: 20px 0;
-			    padding: 0;
-			    list-style: none;
+				list-style: none;
+				margin: 20px 0;
+				padding: 0;
 			}
 		
 			#priceList li {
-			    padding: 10px;
-			    margin: 5px 0;
-			    background: #f0f0f0;
-			    border-radius: 4px;
-			    display: flex;
-			    justify-content: space-between;
+				background: #f0f0f0;
+				border-radius: 4px;
+				display: flex;
+				justify-content: space-between;
+				margin: 5px 0;
+				padding: 10px;
 			}
 		
 			.total {
-			    font-size: 1.2em;
-			    font-weight: bold;
-			    margin-top: 20px;
-			    padding: 10px;
-			    background: #e0e0e0;
-			    border-radius: 4px;
+				background: #e0e0e0;
+				border-radius: 4px;
+				font-size: 1.2em;
+				font-weight: bold;
+				margin-top: 20px;
+				padding: 10px;
 			}
 		
 			button {
-			    background: #007bff;
-			    color: white;
-			    border: none;
-			    padding: 10px 20px;
-			    border-radius: 4px;
-			    cursor: pointer;
-			    margin: 5px;
+				background: #007bff;
+				border: none;
+				border-radius: 4px;
+				color: white;
+				cursor: pointer;
+				margin: 5px;
+				padding: 10px 20px;
 			}
 		
 			button:hover {
-			    background: #0056b3;
+				background: #0056b3;
 			}
 		
 			.delete-btn {
-			    background: #dc3545;
-			    color: white;
-			    border: none;
-			    padding: 5px 10px;
-			    border-radius: 4px;
-			    cursor: pointer;
+				background: #dc3545;
+				border: none;
+				border-radius: 4px;
+				color: white;
+				cursor: pointer;
+				padding: 5px 10px;
 			}
 		
 			.delete-btn:hover {
-			    background: #c82333;
+				background: #c82333;
 			}
 		
 			#manualPrice {
-			    padding: 8px;
-			    border: 1px solid #ddd;
-			    border-radius: 4px;
-			    margin-right: 10px;
+				border: 1px solid #ddd;
+				border-radius: 4px;
+				margin-right: 10px;
+				padding: 8px;
 			}
 		
 			#status {
-			    margin: 10px 0;
-			    padding: 10px;
-			    border-radius: 4px;
-			    background: #e8f4ff;
+				background: #e8f4ff;
+				border-radius: 4px;
+				margin: 10px 0;
+				padding: 10px;
 			}
 		
 			.scanning-area {
-			    position: absolute;
-			    top: 50%;
-			    left: 50%;
-			    transform: translate(-50%, -50%);
-			    width: 200px;
-			    height: 60px;
-			    border: 2px solid #007bff;
-			    border-radius: 4px;
+				border: 2px solid #007bff;
+				border-radius: 4px;
+				height: 60px;
+				left: 50%;
+				position: absolute;
+				top: 50%;
+				transform: translate(-50%, -50%);
+				width: 200px;
 			}
 		
 			.processing {
-			    opacity: 0.7;
-			    pointer-events: none;
+				opacity: 0.7;
+				pointer-events: none;
 			}
 		
-			/* New styles for confirmation dialog */
 			#confirmationDialog {
-			    display: none;
-			    position: fixed;
-			    top: 50%;
-			    left: 50%;
-			    transform: translate(-50%, -50%);
-			    background: white;
-			    padding: 20px;
-			    border-radius: 8px;
-			    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-			    z-index: 1000;
-			    text-align: center;
+				background: white;
+				border-radius: 8px;
+				box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+				display: none;
+				left: 50%;
+				padding: 20px;
+				position: fixed;
+				text-align: center;
+				top: 50%;
+				transform: translate(-50%, -50%);
+				z-index: 1000;
 			}
 		
 			#overlay.dimmed {
-			    background: rgba(0,0,0,0.5);
-			    pointer-events: auto;
+				background: rgba(0,0,0,0.5);
+				pointer-events: auto;
 			}
 		
 			.confirmation-buttons {
-			    margin-top: 15px;
+				margin-top: 15px;
 			}
 		
 			.confirm-btn {
-			    background: #28a745;
+				background: #28a745;
 			}
 		
 			.reject-btn {
-			    background: #dc3545;
+				background: #dc3545;
 			}
 	    </style>
 	</head>
 	<body>
 	    <div class="container">
-		<h1>Price Scanner with OCR</h1>
-		<button id="startCamera">Start Camera</button>
-		<div id="status">Ready to scan</div>
+			<h1>Price Scanner with OCR</h1>
+			<button id="startCamera">Start Camera</button>
+			<div id="status">Ready to scan</div>
 		
-		<div id="videoContainer" style="display: none;">
-		    <video id="video" autoplay playsinline></video>
-		    <canvas id="canvas"></canvas>
-		    <div id="overlay">
-			<div class="scanning-area"></div>
-		    </div>
-		</div>
+			<div id="videoContainer" style="display: none;">
+				<video id="video" autoplay playsinline></video>
+				<canvas id="canvas"></canvas>
+				<div id="overlay">
+					<div class="scanning-area"></div>
+				</div>
+			</div>
 		
-		<div>
-		    <input type="number" id="manualPrice" step="0.01" placeholder="Enter price manually">
-		    <button onclick="addManualPrice()">Add Price</button>
-		</div>
+			<div>
+				<input type="number" id="manualPrice" step="0.01" placeholder="Enter price manually">
+				<button onclick="addManualPrice()">Add Price</button>
+			</div>
 	
-		<ul id="priceList"></ul>
-		<div class="total">Total: €<span id="total">0.00</span></div>
-		<button onclick="clearPrices()">Clear All</button>
+			<ul id="priceList"></ul>
+			<div class="total">Total: €<span id="total">0.00</span></div>
+			<button onclick="clearPrices()">Clear All</button>
 	    </div>
 	
-	    <!-- Confirmation Dialog -->
 	    <div id="confirmationDialog">
-		<h3>Confirm Price</h3>
-		<p>Scanned price: €<span id="scannedPrice">0.00</span></p>
-		<div class="confirmation-buttons">
-		    <button class="confirm-btn" onclick="confirmPrice()">Accept</button>
-		    <button class="reject-btn" onclick="rejectPrice()">Try Again</button>
-		</div>
+			<h3>Confirm Price</h3>
+			<p>Scanned price: €<span id="scannedPrice">0.00</span></p>
+			<div class="confirmation-buttons">
+				<button class="confirm-btn" onclick="confirmPrice()">Accept</button>
+				<button class="reject-btn" onclick="rejectPrice()">Try Again</button>
+			</div>
 	    </div>
 	
 	    <script>
-		let prices = [];
-		let isProcessing = false;
-		let worker = null;
-		let currentStream = null;
-		let scanning = false;
-		let tempScannedPrice = null;
+			let prices = [];
+			let isProcessing = false;
+			let worker = null;
+			let currentStream = null;
+			let scanning = false;
+			let tempScannedPrice = null;
 		
-		const video = document.getElementById('video');
-		const canvas = document.getElementById('canvas');
-		const ctx = canvas.getContext('2d');
-		const startButton = document.getElementById('startCamera');
-		const videoContainer = document.getElementById('videoContainer');
-		const statusElement = document.getElementById('status');
-		const confirmationDialog = document.getElementById('confirmationDialog');
-		const scannedPriceElement = document.getElementById('scannedPrice');
-		const overlayElement = document.getElementById('overlay');
+			const video = document.getElementById('video');
+			const canvas = document.getElementById('canvas');
+			const ctx = canvas.getContext('2d');
+			const startButton = document.getElementById('startCamera');
+			const videoContainer = document.getElementById('videoContainer');
+			const statusElement = document.getElementById('status');
+			const confirmationDialog = document.getElementById('confirmationDialog');
+			const scannedPriceElement = document.getElementById('scannedPrice');
+			const overlayElement = document.getElementById('overlay');
 	
-		async function initializeTesseract() {
-		    try {
-			worker = await Tesseract.createWorker({
-			    logger: m => {
-				if (m.status === 'recognizing text') {
-				    statusElement.textContent = 'Scanning for prices...';
+			async function initializeTesseract() {
+				try {
+					worker = await Tesseract.createWorker({
+						logger: m => {
+							if (m.status === 'recognizing text') {
+								statusElement.textContent = 'Scanning for prices...';
+							}
+						}
+					});
+
+					await worker.loadLanguage('eng');
+					await worker.initialize('eng');
+					await worker.setParameters({
+						tessedit_char_whitelist: '0123456789.,€',
+					});
+					statusElement.textContent = 'OCR initialized. Ready to scan.';
 				}
-			    }
-			});
-			await worker.loadLanguage('eng');
-			await worker.initialize('eng');
-			await worker.setParameters({
-			    tessedit_char_whitelist: '0123456789.,€',
-			});
-			statusElement.textContent = 'OCR initialized. Ready to scan.';
-		    } catch (error) {
-			console.error('Error initializing Tesseract:', error);
-			statusElement.textContent = 'Error initializing OCR. Please refresh the page.';
-		    }
-		}
-	
-		initializeTesseract();
-	
-		startButton.addEventListener('click', async () => {
-		    try {
-			currentStream = await navigator.mediaDevices.getUserMedia({ 
-			    video: { 
-				facingMode: 'environment',
-				width: { ideal: 1280 },
-				height: { ideal: 720 }
-			    }
-			});
-			video.srcObject = currentStream;
-			videoContainer.style.display = 'block';
-			startButton.style.display = 'none';
-			scanning = true;
-			
-			video.addEventListener('loadedmetadata', () => {
-			    canvas.width = video.videoWidth;
-			    canvas.height = video.videoHeight;
-			    scanFrame();
-			});
-		    } catch (err) {
-			console.error('Error accessing camera:', err);
-			alert('Error accessing camera. Please make sure you have granted camera permissions.');
-		    }
-		});
-	
-		function stopCamera() {
-		    if (currentStream) {
-			currentStream.getTracks().forEach(track => track.stop());
-			video.srcObject = null;
-			videoContainer.style.display = 'none';
-			startButton.style.display = 'block';
-			scanning = false;
-		    }
-		}
-	
-		async function scanFrame() {
-		    if (!isProcessing && video.srcObject && worker && scanning) {
-			isProcessing = true;
-			
-			ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-			const scanArea = getScanningArea();
-			const imageData = ctx.getImageData(
-			    scanArea.x, 
-			    scanArea.y, 
-			    scanArea.width, 
-			    scanArea.height
-			);
-			
-			const tempCanvas = document.createElement('canvas');
-			tempCanvas.width = scanArea.width;
-			tempCanvas.height = scanArea.height;
-			const tempCtx = tempCanvas.getContext('2d');
-			tempCtx.putImageData(imageData, 0, 0);
-	
-			try {
-			    const result = await worker.recognize(tempCanvas);
-			    const text = result.data.text.trim();
-			    const price = extractPrice(text);
-			    
-			    if (price !== null) {
-				tempScannedPrice = price;
-				showConfirmationDialog(price);
-				scanning = false;
-			    }
-			} catch (error) {
-			    console.error('OCR Error:', error);
+				catch (error) {
+					console.error('Error initializing Tesseract:', error);
+					statusElement.textContent = 'Error initializing OCR. Please refresh the page.';
+				}
 			}
-			
-			isProcessing = false;
-		    }
-		    
-		    if (scanning) {
-			requestAnimationFrame(scanFrame);
-		    }
-		}
 	
-		function showConfirmationDialog(price) {
-		    scannedPriceElement.textContent = price.toFixed(2);
-		    confirmationDialog.style.display = 'block';
-		    overlayElement.classList.add('dimmed');
-		}
+			initializeTesseract();
 	
-		function hideConfirmationDialog() {
-		    confirmationDialog.style.display = 'none';
-		    overlayElement.classList.remove('dimmed');
-		}
+			startButton.addEventListener('click', async () => {
+				try {
+					currentStream = await navigator.mediaDevices.getUserMedia({ 
+						video: { 
+						facingMode: 'environment',
+						width: { ideal: 1280 },
+						height: { ideal: 720 }
+						}
+					});
+
+					video.srcObject = currentStream;
+					videoContainer.style.display = 'block';
+					startButton.style.display = 'none';
+					scanning = true;
+				
+					video.addEventListener('loadedmetadata', () => {
+						canvas.width = video.videoWidth;
+						canvas.height = video.videoHeight;
+						scanFrame();
+					});
+				}
+				catch (err) {
+					console.error('Error accessing camera:', err);
+					alert('Error accessing camera. Please make sure you have granted camera permissions.');
+				}
+			});
 	
-		function confirmPrice() {
-		    if (tempScannedPrice !== null) {
-			addPrice(tempScannedPrice);
-			tempScannedPrice = null;
-		    }
-		    hideConfirmationDialog();
-		    stopCamera();
-		}
-	
-		function rejectPrice() {
-		    tempScannedPrice = null;
-		    hideConfirmationDialog();
-		    scanning = true;
-		    scanFrame();
-		}
-	
-		function getScanningArea() {
-		    const scanWidth = canvas.width * 0.3;
-		    const scanHeight = canvas.height * 0.15;
-		    return {
-			x: (canvas.width - scanWidth) / 2,
-			y: (canvas.height - scanHeight) / 2,
-			width: scanWidth,
-			height: scanHeight
-		    };
-		}
-	
-		function extractPrice(text) {
-		    // Remove spaces and convert to lowercase
-		    text = text.replace(/\s+/g, '').toLowerCase();
-		    
-		    // Look for price patterns (XX,XX or XX.XX or €XX,XX or €XX.XX)
-		    const priceRegex = /€?\d+[.,]\d{2}/;
-		    const match = text.match(priceRegex);
-		    
-		    if (match) {
-			// Remove € and convert to float (handling both . and , as decimal separator)
-			const priceStr = match[0].replace('€', '').replace(',', '.');
-			const price = parseFloat(priceStr);
-			if (!isNaN(price) && price > 0 && price < 1000) {
-			    return price;
+			function stopCamera() {
+				if (currentStream) {
+					currentStream.getTracks().forEach(track => track.stop());
+					video.srcObject = null;
+					videoContainer.style.display = 'none';
+					startButton.style.display = 'block';
+					scanning = false;
+				}
 			}
-		    }
-		    return null;
-		}
 	
-		function addPrice(price) {
-		    const lastPrice = prices[prices.length - 1];
-		    if (lastPrice === price) {
-			return;
-		    }
-		    
-		    prices.push(price);
-		    statusElement.textContent = `Added: €${price.toFixed(2)}`;
-		    updateDisplay();
-		}
+			async function scanFrame() {
+				if (!isProcessing && video.srcObject && worker && scanning) {
+					isProcessing = true;
+				
+					ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+					const scanArea = getScanningArea();
+					const imageData = ctx.getImageData(
+						scanArea.x, 
+						scanArea.y, 
+						scanArea.width, 
+						scanArea.height
+					);
+				
+					const tempCanvas = document.createElement('canvas');
+					tempCanvas.width = scanArea.width;
+					tempCanvas.height = scanArea.height;
+					const tempCtx = tempCanvas.getContext('2d');
+					tempCtx.putImageData(imageData, 0, 0);
+		
+					try {
+						const result = await worker.recognize(tempCanvas);
+						const text = result.data.text.trim();
+						const price = extractPrice(text);
+						
+						if (price !== null) {
+							tempScannedPrice = price;
+							showConfirmationDialog(price);
+							scanning = false;
+						}
+					}
+					catch (error) {
+						console.error('OCR Error:', error);
+					}
+				
+					isProcessing = false;
+				}
+				
+				if (scanning) {
+					requestAnimationFrame(scanFrame);
+				}
+			}
 	
-		function addManualPrice() {
-		    const input = document.getElementById('manualPrice');
-		    const price = parseFloat(input.value);
-		    if (!isNaN(price) && price > 0) {
-			addPrice(price);
-			input.value = '';
-		    } else {
-			alert('Please enter a valid price');
-		    }
-		}
+			function showConfirmationDialog(price) {
+				scannedPriceElement.textContent = price.toFixed(2);
+				confirmationDialog.style.display = 'block';
+				overlayElement.classList.add('dimmed');
+			}
 	
-		function deletePrice(index) {
-		    prices.splice(index, 1);
-		    updateDisplay();
-		}
+			function hideConfirmationDialog() {
+				confirmationDialog.style.display = 'none';
+				overlayElement.classList.remove('dimmed');
+			}
 	
-		function updateDisplay() {
-		    const priceList = document.getElementById('priceList');
-		    const totalElement = document.getElementById('total');
-		    
-		    priceList.innerHTML = '';
-		    prices.forEach((price, index) => {
-			const li = document.createElement('li');
-			li.innerHTML = `
-			    €${price.toFixed(2)}
-			    <button class="delete-btn" onclick="deletePrice(${index})">×</button>
-			`;
-			priceList.appendChild(li);
-		    });
+			function confirmPrice() {
+				if (tempScannedPrice !== null) {
+					addPrice(tempScannedPrice);
+					tempScannedPrice = null;
+				}
+				hideConfirmationDialog();
+				stopCamera();
+			}
 	
-		    const total = prices.reduce((sum, price) => sum + price, 0);
-		    totalElement.textContent = total.toFixed(2);
-		}
+			function rejectPrice() {
+				tempScannedPrice = null;
+				hideConfirmationDialog();
+				scanning = true;
+				scanFrame();
+			}
 	
-		function clearPrices() {
-		    prices = [];
-		    updateDisplay();
-		    statusElement.textContent = 'Ready to scan';
-		}
+			function getScanningArea() {
+				const scanWidth = canvas.width * 0.3;
+				const scanHeight = canvas.height * 0.15;
+				return {
+					x: (canvas.width - scanWidth) / 2,
+					y: (canvas.height - scanHeight) / 2,
+					width: scanWidth,
+					height: scanHeight
+				};
+			}
+	
+			function extractPrice(text) {
+				// Remove spaces and convert to lowercase
+				text = text.replace(/\s+/g, '').toLowerCase();
+				
+				// Look for price patterns (XX,XX or XX.XX or €XX,XX or €XX.XX)
+				const priceRegex = /€?\d+[.,]\d{2}/;
+				const match = text.match(priceRegex);
+				
+				if (match) {
+					// Remove € and convert to float (handling both . and , as decimal separator)
+					const priceStr = match[0].replace('€', '').replace(',', '.');
+					const price = parseFloat(priceStr);
+					if (!isNaN(price) && price > 0 && price < 1000) {
+						return price;
+					}
+				}
+
+				return null;
+			}
+	
+			function addPrice(price) {
+				const lastPrice = prices[prices.length - 1];
+				if (lastPrice === price) {
+					return;
+				}
+				
+				prices.push(price);
+				statusElement.textContent = `Added: €${price.toFixed(2)}`;
+				updateDisplay();
+			}
+	
+			function addManualPrice() {
+				const input = document.getElementById('manualPrice');
+				const price = parseFloat(input.value);
+				if (!isNaN(price) && price > 0) {
+					addPrice(price);
+					input.value = '';
+				}
+				else {
+					alert('Please enter a valid price');
+				}
+			}
+	
+			function deletePrice(index) {
+				prices.splice(index, 1);
+				updateDisplay();
+			}
+	
+			function updateDisplay() {
+				const priceList = document.getElementById('priceList');
+				const totalElement = document.getElementById('total');
+				
+				priceList.innerHTML = '';
+				prices.forEach((price, index) => {
+					const li = document.createElement('li');
+					li.innerHTML = `
+						€${price.toFixed(2)}
+						<button class="delete-btn" onclick="deletePrice(${index})">×</button>
+					`;
+					priceList.appendChild(li);
+				});
+		
+				const total = prices.reduce((sum, price) => sum + price, 0);
+				totalElement.textContent = total.toFixed(2);
+			}
+	
+			function clearPrices() {
+				prices = [];
+				updateDisplay();
+				statusElement.textContent = 'Ready to scan';
+			}
 	    </script>
 	</body>
 </html>
