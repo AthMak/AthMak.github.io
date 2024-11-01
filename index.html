@@ -222,7 +222,7 @@
 					updateDisplay();
 				}
 			}
-			
+
 			function savePrices() {
 				localStorage.setItem('scannerPrices', JSON.stringify(prices));
 			}
@@ -372,15 +372,12 @@
 			}
 	
 			function extractPrice(text) {
-				// Remove spaces and convert to lowercase
 				text = text.replace(/\s+/g, '').toLowerCase();
 				
-				// Look for price patterns (XX,XX or XX.XX or €XX,XX or €XX.XX)
 				const priceRegex = /€?\d+[.,]\d{2}/;
 				const match = text.match(priceRegex);
 				
 				if (match) {
-					// Remove € and convert to float (handling both . and , as decimal separator)
 					const priceStr = match[0].replace('€', '').replace(',', '.');
 					const price = parseFloat(priceStr);
 					if (!isNaN(price) && price > 0 && price < 1000) {
@@ -393,10 +390,7 @@
 	
 			function addPrice(price) {
 				const lastPrice = prices[prices.length - 1];
-				if (lastPrice === price) {
-					return;
-				}
-				
+								
 				prices.push(price);
 				savePrices();
 				statusElement.textContent = `Added: €${price.toFixed(2)}`;
